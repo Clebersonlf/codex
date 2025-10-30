@@ -24,6 +24,7 @@ pub enum SlashCommand {
     Status,
     Mcp,
     Logout,
+    #[strum(serialize = "exit", serialize = "e")]
     Quit,
     Feedback,
     #[cfg(debug_assertions)]
@@ -56,7 +57,24 @@ impl SlashCommand {
     /// Command string without the leading '/'. Provided for compatibility with
     /// existing code that expects a method named `command()`.
     pub fn command(self) -> &'static str {
-        self.into()
+        match self {
+            SlashCommand::Model => "model",
+            SlashCommand::Approvals => "approvals",
+            SlashCommand::Review => "review",
+            SlashCommand::New => "new",
+            SlashCommand::Init => "init",
+            SlashCommand::Compact => "compact",
+            SlashCommand::Undo => "undo",
+            SlashCommand::Diff => "diff",
+            SlashCommand::Mention => "mention",
+            SlashCommand::Status => "status",
+            SlashCommand::Mcp => "mcp",
+            SlashCommand::Logout => "logout",
+            SlashCommand::Quit => "quit",
+            SlashCommand::Feedback => "feedback",
+            #[cfg(debug_assertions)]
+            SlashCommand::TestApproval => "test-approval",
+        }
     }
 
     /// Whether this command can be run while a task is in progress.
@@ -81,9 +99,53 @@ impl SlashCommand {
             SlashCommand::TestApproval => true,
         }
     }
+
+    /// Additional slash names that map to this command.
+    pub fn aliases(self) -> &'static [&'static str] {
+        match self {
+            SlashCommand::Quit => &["exit", "e"],
+            #[cfg(debug_assertions)]
+            SlashCommand::TestApproval => &[],
+            _ => &[],
+        }
+    }
+
+    /// Return true if `name` matches this command's canonical name or an alias.
+    pub fn matches_name(self, name: &str) -> bool {
+        if self.command() == name {
+            return true;
+        }
+        self.aliases().contains(&name)
+    }
 }
 
 /// Return all built-in commands in a Vec paired with their command string.
 pub fn built_in_slash_commands() -> Vec<(&'static str, SlashCommand)> {
     SlashCommand::iter().map(|c| (c.command(), c)).collect()
+}
+
+/// Resolve a slash command name (including aliases) to the corresponding command.
+pub fn resolve_slash_command(name: &str) -> Option<SlashCommand> {
+    SlashCommand::iter().find(|cmd| cmd.matches_name(name))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+    use std::str::FromStr;
+
+    #[test]
+    fn resolve_slash_command_supports_aliases() {
+        assert_eq!(resolve_slash_command("quit"), Some(SlashCommand::Quit));
+        assert_eq!(resolve_slash_command("exit"), Some(SlashCommand::Quit));
+        assert_eq!(resolve_slash_command("e"), Some(SlashCommand::Quit));
+        assert_eq!(resolve_slash_command("unknown"), None);
+    }
+
+    #[test]
+    fn from_str_includes_aliases() {
+        assert_eq!(SlashCommand::from_str("exit"), Ok(SlashCommand::Quit));
+        assert_eq!(SlashCommand::from_str("e"), Ok(SlashCommand::Quit));
+    }
 }
