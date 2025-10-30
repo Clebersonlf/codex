@@ -2,13 +2,10 @@ use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use strum_macros::AsRefStr;
 use strum_macros::EnumIter;
-use strum_macros::EnumString;
 use strum_macros::IntoStaticStr;
 
 /// Commands that can be invoked by starting a message with a leading slash.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, EnumIter, AsRefStr, IntoStaticStr,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, AsRefStr, IntoStaticStr)]
 #[strum(serialize_all = "kebab-case")]
 pub enum SlashCommand {
     // DO NOT ALPHA-SORT! Enum order is presentation order in the popup, so
@@ -25,7 +22,6 @@ pub enum SlashCommand {
     Status,
     Mcp,
     Logout,
-    #[strum(serialize = "exit", serialize = "e")]
     Quit,
     Feedback,
     #[cfg(debug_assertions)]
@@ -82,6 +78,14 @@ pub fn built_in_slash_commands() -> Vec<(&'static str, SlashCommand)> {
 /// Resolve a slash command name (including aliases) to the corresponding command.
 pub fn resolve_slash_command(name: &str) -> Option<SlashCommand> {
     NAME_TO_CMD.get(name).copied()
+}
+
+impl std::str::FromStr for SlashCommand {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        NAME_TO_CMD.get(s).copied().ok_or(())
+    }
 }
 
 /// Central spec for all slash commands. Keeps metadata in one place.
