@@ -186,7 +186,7 @@ static SPECS: &[CommandSpec] = &[
     CommandSpec {
         cmd: SlashCommand::Quit,
         canonical: "quit",
-        aliases: &["exit", "e"],
+        aliases: &["exit"],
         description: "exit Codex",
         available_during_task: true,
     },
